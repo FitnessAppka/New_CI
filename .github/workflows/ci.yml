@@ -1,0 +1,39 @@
+name: CI Database Setup
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  setup-db:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: tn_project
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Wait for MySQL
+        run: sleep 20
+
+      - name: Create database & tables
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot < database/create_db_tasks.sql
+          mysql -h 127.0.0.1 -uroot -proot tn_project < database/create_tasks_logs.sql
+
+      - name: Seed data
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot tn_project < database/seed_tasks.sql
